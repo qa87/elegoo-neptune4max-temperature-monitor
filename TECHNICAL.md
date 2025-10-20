@@ -206,34 +206,52 @@ def load_config(self):
 
 ### Типы уведомлений:
 
-1. **Визуальные уведомления** - всплывающие окна
+1. **Системные уведомления Windows** - нативные toast уведомления
 2. **Звуковые сигналы** - системные звуки
 3. **Логирование** - запись в файл/консоль
 
 ### Реализация уведомлений:
 
 ```python
-def show_notification(self, message_type, message):
+def show_system_notification(self, current_temp, target_temp):
     """
-    Показывает уведомление пользователю
+    Показывает системное уведомление Windows
     
     Args:
-        message_type (str): Тип сообщения ('info', 'warning', 'error')
-        message (str): Текст сообщения
+        current_temp (float): Текущая температура
+        target_temp (float): Целевая температура
     """
-    # Визуальное уведомление
-    if message_type == 'error':
-        messagebox.showerror("Ошибка", message)
-    elif message_type == 'warning':
-        messagebox.showwarning("Предупреждение", message)
+    title = "🎯 Цель достигнута!"
+    message = f"Температура стола достигла {current_temp:.1f}°C\nЦелевая температура: {target_temp}°C"
+    
+    if TOAST_AVAILABLE:
+        try:
+            # Используем win10toast для системных уведомлений
+            toaster = ToastNotifier()
+            toaster.show_toast(
+                title=title,
+                msg=message,
+                duration=10,  # Показывать 10 секунд
+                icon_path=None,  # Можно добавить иконку
+                threaded=True
+            )
+        except Exception as e:
+            # Fallback к обычному окну
+            self.show_fallback_notification(current_temp, target_temp)
     else:
-        messagebox.showinfo("Информация", message)
-    
-    # Звуковое уведомление
-    self.play_sound(message_type)
-    
-    # Логирование
-    self.log_message(f"[{message_type.upper()}] {message}")
+        # Fallback к обычному окну
+        self.show_fallback_notification(current_temp, target_temp)
+```
+
+### Зависимости для уведомлений:
+
+```python
+# Автоматический импорт с fallback
+try:
+    from win10toast import ToastNotifier
+    TOAST_AVAILABLE = True
+except ImportError:
+    TOAST_AVAILABLE = False
 ```
 
 ## 🌐 Сетевое взаимодействие

@@ -7,6 +7,13 @@ import json
 import os
 from datetime import datetime
 
+# Импорт для системных уведомлений Windows
+try:
+    from win10toast import ToastNotifier
+    TOAST_AVAILABLE = True
+except ImportError:
+    TOAST_AVAILABLE = False
+
 class PrinterMonitorGUI:
     def __init__(self, root):
         self.root = root
@@ -244,10 +251,8 @@ class PrinterMonitorGUI:
         """Показ уведомления о достижении температуры"""
         self.log_message(f"ЦЕЛЬ ДОСТИГНУТА! Температура: {current_temp:.1f}°C (цель: {target_temp}°C)")
         
-        # Показываем уведомление
-        messagebox.showinfo("ЦЕЛЬ ДОСТИГНУТА!", 
-                           f"Температура стола достигла {current_temp:.1f}°C!\n"
-                           f"Целевая температура: {target_temp}°C")
+        # Показываем системное уведомление Windows
+        self.show_system_notification(current_temp, target_temp)
         
         # Звуковой сигнал
         try:
@@ -261,6 +266,38 @@ class PrinterMonitorGUI:
         except ImportError:
             # Если winsound недоступен (например, на Linux/Mac)
             print("\a" * 3)  # Звуковой сигнал терминала
+    
+    def show_system_notification(self, current_temp, target_temp):
+        """Показывает системное уведомление Windows"""
+        title = "🎯 Цель достигнута!"
+        message = f"Температура стола достигла {current_temp:.1f}°C\nЦелевая температура: {target_temp}°C"
+        
+        if TOAST_AVAILABLE:
+            try:
+                # Используем win10toast для системных уведомлений
+                toaster = ToastNotifier()
+                toaster.show_toast(
+                    title=title,
+                    msg=message,
+                    duration=10,  # Показывать 10 секунд
+                    icon_path=None,  # Можно добавить иконку
+                    threaded=True
+                )
+                self.log_message("Системное уведомление отправлено")
+            except Exception as e:
+                self.log_message(f"Ошибка системного уведомления: {e}")
+                # Fallback к обычному окну
+                self.show_fallback_notification(current_temp, target_temp)
+        else:
+            self.log_message("win10toast недоступен, используем fallback")
+            # Fallback к обычному окну
+            self.show_fallback_notification(current_temp, target_temp)
+    
+    def show_fallback_notification(self, current_temp, target_temp):
+        """Fallback уведомление через обычное окно"""
+        messagebox.showinfo("ЦЕЛЬ ДОСТИГНУТА!", 
+                           f"Температура стола достигла {current_temp:.1f}°C!\n"
+                           f"Целевая температура: {target_temp}°C")
 
 # Запуск приложения
 if __name__ == "__main__":
