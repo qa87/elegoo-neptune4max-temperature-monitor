@@ -9,10 +9,12 @@ from datetime import datetime
 
 # Импорт для системных уведомлений Windows
 try:
-    from win10toast import ToastNotifier
-    TOAST_AVAILABLE = True
+    import win32api
+    import win32con
+    import win32gui
+    WINDOWS_NOTIFICATIONS_AVAILABLE = True
 except ImportError:
-    TOAST_AVAILABLE = False
+    WINDOWS_NOTIFICATIONS_AVAILABLE = False
 
 class PrinterMonitorGUI:
     def __init__(self, root):
@@ -272,16 +274,14 @@ class PrinterMonitorGUI:
         title = "🎯 Цель достигнута!"
         message = f"Температура стола достигла {current_temp:.1f}°C\nЦелевая температура: {target_temp}°C"
         
-        if TOAST_AVAILABLE:
+        if WINDOWS_NOTIFICATIONS_AVAILABLE:
             try:
-                # Используем win10toast для системных уведомлений
-                toaster = ToastNotifier()
-                toaster.show_toast(
-                    title=title,
-                    msg=message,
-                    duration=10,  # Показывать 10 секунд
-                    icon_path=None,  # Можно добавить иконку
-                    threaded=True
+                # Используем MessageBox для системного уведомления
+                win32api.MessageBox(
+                    0,  # hwnd
+                    message,
+                    title,
+                    win32con.MB_OK | win32con.MB_ICONINFORMATION | win32con.MB_TOPMOST
                 )
                 self.log_message("Системное уведомление отправлено")
             except Exception as e:
@@ -289,7 +289,7 @@ class PrinterMonitorGUI:
                 # Fallback к обычному окну
                 self.show_fallback_notification(current_temp, target_temp)
         else:
-            self.log_message("win10toast недоступен, используем fallback")
+            self.log_message("Windows API недоступен, используем fallback")
             # Fallback к обычному окну
             self.show_fallback_notification(current_temp, target_temp)
     
